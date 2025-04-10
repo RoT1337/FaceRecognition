@@ -32,26 +32,20 @@ def capture_picture():
             print("Failed to access the webcam or webcam was closed.")
             break
 
-        while True:
-            ret, frame = webcam.read()
-            if (not ret):
-                print("Failed to access the webcam.")
-                break
+        frame = cv2.flip(frame, 1)
 
-            cv2.imshow("Webcam - Press 's' to take a picture, 'q' to quit", frame)
+        cv2.imshow("Webcam - Press 's' to take a picture, 'q' to quit", frame)
 
-            key = cv2.waitKey(1) & 0xFF
+        key = cv2.waitKey(1) & 0xFF
 
-            if (key == ord('s')):
-                file_name = os.path.join(save_dir, f"{name}_{index}.jpg")
-                cv2.imwrite(file_name, frame)
-                messagebox.showinfo("Successful", f"Picture saved as {file_name}")
-                index += 1
-            elif (key == ord('q')):
-                messagebox.showinfo("Error", "Closing the application, press OK")
-                webcam.release()
-                cv2.destroyAllWindows()
-                break
+        if (key == ord('s')):
+            file_name = os.path.join(save_dir, f"{name}_{index}.jpg")
+            cv2.imwrite(file_name, frame)
+            messagebox.showinfo("Successful", f"Picture saved as {file_name}")
+            index += 1
+        elif (key == ord('q')):
+            messagebox.showinfo("Error", "Closing the application, press OK")
+            break
 
     webcam.release()
     cv2.destroyAllWindows()

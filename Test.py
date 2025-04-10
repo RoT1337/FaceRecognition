@@ -23,7 +23,7 @@ class FaceRecognition:
     known_face_encodings = []
     known_face_names = []
 
-    process_current_frame = True
+    process_current_frame = 0
 
     def __init__(self):
         self.encode_faces()
@@ -46,13 +46,14 @@ class FaceRecognition:
 
         while True:
             ret, frame = webcam.read()
+            
+            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+            rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-            if self.process_current_frame:
-                small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-
+            if (self.process_current_frame % 4 == 0):
                 self.face_locations = face_recognition.face_locations(rgb_small_frame)
                 self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
+                face_landmarks_list = face_recognition.face_landmarks(rgb_small_frame)
 
                 self.face_names = []
                 for face_encoding in self.face_encodings:
@@ -68,20 +69,21 @@ class FaceRecognition:
                         confidence = face_confidence(face_distances[best_match_index])
                     
                     self.face_names.append(f'{name} ({confidence})')
+            self.process_current_frame += 1
 
-            self.process_current_frame = not self.process_current_frame
+            for face_landmarks in face_landmarks_list:
+                for facial_feature in face_landmarks.keys():
+                    for point in face_landmarks[facial_feature]:
+                        point = (point[0] * 4, point[1] * 4)
+                        cv2.circle(frame, point, 1, (255, 0, 255), -1)
 
-            for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
-                top *= 4
-                right *= 4
-                bottom *= 4
-                left *= 4
+                if 'chin' in face_landmarks:
+                    chin_points = face_landmarks['chin']
+                    middle_chin = chin_points[len(chin_points) // 2]
+                    x, y = middle_chin[0] * 4, middle_chin[1] * 4
+                    cv2.putText(frame, f'{name} ({confidence})', (x, y + 20), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 255, 255), 1)
 
-                cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 255), 1)
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 255), -1)
-                cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255), 1)
-            
-            cv2.imshow('Face Recognition', frame)
+            cv2.imshow('Face Recognition with Landmarks and Confidence', frame)
 
             if cv2.waitKey(1) == ord('q'):
                 messagebox.showinfo("Closing", "Closing the application, press OK")
